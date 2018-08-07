@@ -102,8 +102,8 @@ run;
 
 /*Combine comparison groups*/
 data AMERGE; set AMERGE NON_INTERVENTION;
-If InterventionA ='Y' then Intervention='N';
-else Intervention='Y';
+If InterventionA ='Y' then Intervention='Y';
+else Intervention='N';
 proc sort; by id;
 
 /*Compare Length of Stay Outcome:*/
