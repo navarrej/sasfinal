@@ -86,17 +86,27 @@ if (DISCHARGE) < input('12/01/2016',mmddyy10.)
 then delete;
 RUN;
 
-/*create comparison groups */
-Data AB; merge ANODUP B; BY ID; 
+/*create treatment group */
+Data ABBOTH; merge ANODUP B; BY ID; 
 if InterventionA='Y' and InterventionB='Y' then Intervention='Y'; 
-else Intervention='N';
+else delete;
 run;
 
-
-RUN;
-
-Data ABMerge; merge AB PATIENTDIAGNOSISNODUP; BY ID; 
+Data ABMerge; merge ABBOTH PATIENTDIAGNOSISNODUP; BY ID; 
 if intervention=' ' then intervention='N';
+run;
+
+/*create control group */
+DATA AB; MERGE ANODUP B; BY ID;
+Intervention = 'Y'; 
+run;
+
+data NON_INTERVENTION; merge AB PATIENTDIAGNOSISNODUP; BY ID;
+if Intervention ='Y' then delete; 
+run;
+
+DATA FINALDATA; set ABMerge NON_INTERVENTION; 
+proc sort; by id;
 run;
 
 /*Compare Length of Stay Outcome using proc ttest or Wilcoxon rank sums (non-parametric):*/
@@ -105,4 +115,3 @@ Proc NPar1way data=ABMerge wilcoxon;
 	var LengthOfStay;
 
 Proc Freq; tables Intervention*STATUS; 
-run;
