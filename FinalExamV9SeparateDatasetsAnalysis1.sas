@@ -81,13 +81,13 @@ RUN;
 
 /*merge patient diagnosis*/
 DATA PATIENTDIAGNOSISNODUP; MERGE PATIENT DIAGNOSISNODUPLICATES; BY ID;
+/*delete patients discharged pre-12/01/2016 */
+if (DISCHARGE) < input('12/01/2016',mmddyy10.)
+then delete; 
 RUN;
 
 DATA AMERGE; MERGE ANODUP PATIENTDIAGNOSISNODUP; BY ID;
 
-delete patients discharged pre-12/01/2016 
-if (DISCHARGE) < input('12/01/2016',mmddyy10.)
-then delete; 
 
 If Intervention not = 'A' then delete;
 RUN;
