@@ -87,9 +87,7 @@ then delete;
 RUN;
 
 DATA AMERGE; MERGE ANODUP PATIENTDIAGNOSISNODUP; BY ID;
-
-
-If Intervention not = 'A' then delete;
+If InterventionA not = 'Y' then delete;
 RUN;
 
 /*create treatment group */
@@ -104,7 +102,8 @@ run;
 
 /*Combine comparison groups*/
 data AMERGE; set AMERGE NON_INTERVENTION;
-If Intervention =' ' then Intervention='N';
+If InterventionA ='Y' then Intervention='N';
+else Intervention='Y';
 proc sort; by id;
 
 /*Compare Length of Stay Outcome:*/
