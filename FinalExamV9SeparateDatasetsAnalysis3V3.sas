@@ -30,7 +30,7 @@ OPTIONS LS = 120;
 PROC SORT; BY ID;
 RUN;
 
-/*A has duplicates so remove them*/
+/*Remove duplicates from A*/
 PROC SORT DATA=A
 	OUT=ANODUP
 	NODUPKEY;
@@ -70,47 +70,31 @@ run;
 
 DATA PATIENT ; SET EXAM.PATIENT; /*no duplicate IDs in this dataset*/
 OPTIONS LS = 120;
-
+/*delete patients discharged pre-12/01/2016 */
+if (DISCHARGE) < input('12/01/2016',mmddyy10.)
+then delete;
 /*create outcome variables:*/
 If STATUS IN ('DEAD','dEATH','deceased','DIED','Died','Expire','Expired','Dead') then STATUS = 'DEAD';
 else STATUS='ALIVE';
 LengthOfStay=DISCHARGE-ADMIT;
-
 PROC SORT; BY ID;
 RUN;
 
-/*merge patient diagnosis*/
-DATA PATIENTDIAGNOSISNODUP; MERGE PATIENT DIAGNOSISNODUPLICATES; BY ID;
-/*delete patients discharged pre-12/01/2016 */
-if (DISCHARGE) < input('12/01/2016',mmddyy10.)
-then delete;
+/*create treatment group who received both A&B*/
+data ABMERGE; MERGE ANODUP B; BY ID; 
 RUN;
 
-/*create treatment group */
-Data ABBOTH; merge ANODUP B; BY ID; 
+DATA PATIENTDIAGNOSISNODUP; MERGE PATIENT DIAGNOSISNODUPLICATES; BY ID;
+if discharge=' ' then delete;
+RUN;
+
+Data FINALDATA; merge ABMERGE PATIENTDIAGNOSISNODUP; BY ID; 
 if InterventionA='Y' and InterventionB='Y' then Intervention='Y'; 
-else delete;
+else Intervention='N';
 run;
 
-Data ABMerge; merge ABBOTH PATIENTDIAGNOSISNODUP; BY ID; 
-if intervention=' ' then intervention='N';
-run;
-
-/*create control group */
-DATA AB; MERGE ANODUP B; BY ID;
-Intervention = 'Y'; 
-run;
-
-data NON_INTERVENTION; merge AB PATIENTDIAGNOSISNODUP; BY ID;
-if Intervention ='Y' then delete; 
-run;
-
-DATA FINALDATA; set ABMerge NON_INTERVENTION; 
-proc sort; by id;
-run;
-
-/*Compare Length of Stay Outcome using proc ttest or Wilcoxon rank sums (non-parametric):*/
-Proc NPar1way data=ABMerge wilcoxon;
+/*Compare Length of Stay Outcome using Wilcoxon rank sums since data is non-parametric*/
+Proc NPar1way data=FINALDATA wilcoxon;
 	class Intervention;
 	var LengthOfStay;
 
